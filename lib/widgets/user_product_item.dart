@@ -4,8 +4,9 @@ import 'package:shop_app/screens/product_form_screen.dart';
 class UserProductItem extends StatelessWidget {
   final String title;
   final String imageUrl;
+  final String id;
 
-  UserProductItem(this.title, this.imageUrl);
+  UserProductItem(this.title, this.imageUrl, this.id);
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -25,7 +26,8 @@ class UserProductItem extends StatelessWidget {
                     color: Theme.of(context).primaryColor,
                   ),
                   onPressed: () {
-                    Navigator.of(context).pushNamed(ProductFormScreen.ROUTE);
+                    Navigator.of(context)
+                        .pushNamed(ProductFormScreen.ROUTE, arguments: this.id);
                   },
                 ),
                 IconButton(

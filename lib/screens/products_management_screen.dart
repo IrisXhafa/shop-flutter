@@ -40,7 +40,7 @@ class ProductsManagementScreen extends StatelessWidget {
         child: ListView.builder(
           itemBuilder: (ctx, index) {
             Product product = products[index];
-            return UserProductItem(product.title, product.imageUrl);
+            return UserProductItem(product.title, product.imageUrl, product.id);
           },
           itemCount: products.length,
         ),
