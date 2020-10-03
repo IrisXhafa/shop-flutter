@@ -46,10 +46,26 @@ class CartProvider with ChangeNotifier {
         quantity: existingCartItem.quantity + 1,
       ),
     );
+    notifyListeners();
   }
 
   removeCartItem(String id) {
     _cartItems.removeWhere((key, value) => value.id == id);
+    notifyListeners();
+  }
+
+  removeLastAddedItem(String id) {
+    if (_cartItems[id].quantity > 1) {
+      _cartItems.update(
+          id,
+          (existingCartItem) => CartItem(
+              id: existingCartItem.id,
+              title: existingCartItem.title,
+              price: existingCartItem.price,
+              quantity: existingCartItem.quantity - 1));
+    } else {
+      _cartItems.removeWhere((key, _) => key == id);
+    }
     notifyListeners();
   }
 
