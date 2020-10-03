@@ -127,7 +127,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 },
               ),
               TextFormField(
-                initialValue: newProduct.price.toString(),
+                initialValue:
+                    newProduct.price != null ? newProduct.price.toString() : '',
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'Price',
