@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shop_app/screens/product_form_screen.dart';
 
 class UserProductItem extends StatelessWidget {
   final String title;
@@ -23,7 +24,9 @@ class UserProductItem extends StatelessWidget {
                     Icons.create,
                     color: Theme.of(context).primaryColor,
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).pushNamed(ProductFormScreen.ROUTE);
+                  },
                 ),
                 IconButton(
                   icon: Icon(
