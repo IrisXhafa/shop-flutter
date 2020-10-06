@@ -1,65 +1,91 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart' as http;
+
+import 'package:shop_app/constants.dart';
+import '../http_exception.dart';
 import '../models/product.dart';
 
 class ProductsProvider with ChangeNotifier {
-  List<Product> _items = [
-    Product(
-      id: 'p1',
-      title: 'Red Shirt',
-      description: 'A red shirt - it is pretty red!',
-      price: 29.99,
-      imageUrl:
-          'https://cdn.pixabay.com/photo/2016/10/02/22/17/red-t-shirt-1710578_1280.jpg',
-    ),
-    Product(
-      id: 'p2',
-      title: 'Trousers',
-      description: 'A nice pair of trousers.',
-      price: 59.99,
-      imageUrl:
-          'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Trousers%2C_dress_%28AM_1960.022-8%29.jpg/512px-Trousers%2C_dress_%28AM_1960.022-8%29.jpg',
-    ),
-    Product(
-      id: 'p3',
-      title: 'Yellow Scarf',
-      description: 'Warm and cozy - exactly what you need for the winter.',
-      price: 19.99,
-      imageUrl:
-          'https://live.staticflickr.com/4043/4438260868_cc79b3369d_z.jpg',
-    ),
-    Product(
-      id: 'p4',
-      title: 'A Pan',
-      description: 'Prepare any meal you want.',
-      price: 49.99,
-      imageUrl:
-          'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcRAsYn2Fd78um2cbKs_VB9WYivg7GPZdMsy7A&usqp=CAU',
-    ),
-  ];
+  List<Product> _items = [];
 
   List<Product> get items {
     return [..._items];
   }
 
   List<Product> get favorites {
-    return [...items].where((product) => product.isFavorite).toList();
+    return [..._items].where((product) => product.isFavorite).toList();
   }
 
   Product getById(String id) {
     return this.items.firstWhere((product) => product.id == id);
   }
 
-  addProduct(Product newProduct) {
-    this._items.add(newProduct);
+  Future<void> fetchProducts() async {
+    var response = await http.get('$URL/products.json');
+    var res = json.decode(response.body) as Map<String, dynamic>;
+    _items = [];
+    res.forEach((key, value) {
+      _items.add(_convertMapToProduct(key, value));
+    });
+    print(json.decode(response.body));
+  }
+
+  Future<void> addProduct(Product newProduct) async {
+    try {
+      Map<String, dynamic> product = _createProductMap(newProduct);
+      var response =
+          await http.post('$URL/products.json', body: json.encode(product));
+      newProduct = Product(
+          id: json.decode(response.body)['name'],
+          title: newProduct.title,
+          description: newProduct.description,
+          imageUrl: newProduct.imageUrl,
+          price: newProduct.price,
+          isFavorite: newProduct.isFavorite);
+      this._items.add(newProduct);
+      notifyListeners();
+    } on Exception catch (e) {
+      throw e;
+    }
+  }
+
+  Future<void> updateProduct(Product editedProduct) async {
+    int index = _items.indexWhere((element) => element.id == editedProduct.id);
+    if (index >= 0) {
+      Product oldProduct = _items[index];
+      _items[index] = editedProduct;
+      Map<String, dynamic> product = _createProductMap(editedProduct);
+      var response = await http.put('$URL/products/${editedProduct.id}.json',
+          body: json.encode(product));
+      if (response.statusCode >= 400) {
+        _items[index] = oldProduct;
+        throw HttpException('An error occurred');
+      }
+    }
+
     notifyListeners();
   }
 
-  updateProduct(Product editedProduct) {
-    int index = _items.indexWhere((element) => element.id == editedProduct.id);
-    if (index >= 0) {
-      _items[index] = editedProduct;
-    }
-    notifyListeners();
+  _convertMapToProduct(id, productMap) {
+    return Product(
+        id: id,
+        title: productMap['title'],
+        description: productMap['description'],
+        imageUrl: productMap['imageUrl'],
+        price: productMap['price'],
+        isFavorite: productMap['isFavorite']);
+  }
+
+  _createProductMap(Product product) {
+    Map<String, dynamic> productMap = {
+      'title': product.title,
+      'description': product.description,
+      'price': product.price,
+      'imageUrl': product.imageUrl,
+      'isFavorite': product.isFavorite
+    };
+    return productMap;
   }
 }

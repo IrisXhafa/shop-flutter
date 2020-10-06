@@ -11,29 +11,42 @@ class ProductsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final productsData = Provider.of<ProductsProvider>(context);
-    List<Product> products;
-    if (this.showOnlyFavorites) {
-      products = productsData.favorites;
-    } else {
-      products = productsData.items;
-    }
-
     return Container(
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 3 / 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-        ),
-        itemBuilder: (ctx, index) {
-          return ChangeNotifierProvider.value(
-            value: products[index],
-            builder: (context, child) => ProductItem(),
-          );
+      child: FutureBuilder(
+        future: Provider.of<ProductsProvider>(context).fetchProducts(),
+        builder: (context, dataSnapshot) {
+          if (dataSnapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (dataSnapshot.connectionState == ConnectionState.done) {
+            return Consumer<ProductsProvider>(builder: (ctx, productsData, _) {
+              List<Product> products;
+              if (this.showOnlyFavorites) {
+                products = productsData.favorites;
+              } else {
+                products = productsData.items;
+              }
+              return GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 3 / 2,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemBuilder: (ctx, index) {
+                  return ChangeNotifierProvider.value(
+                    value: products[index],
+                    builder: (context, child) => ProductItem(),
+                  );
+                },
+                itemCount: products.length,
+              );
+            });
+          } else {
+            return Text('Error occurred');
+          }
         },
-        itemCount: products.length,
       ),
     );
   }
