@@ -68,6 +68,27 @@ class ProductsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteProduct(String id) async {
+    final index = _items.indexWhere((element) => element.id == id);
+    final deletedProduct = _items[index];
+    _items.removeAt(index);
+    notifyListeners();
+    try {
+      final response = await http.delete('$URL/products/$id.json');
+      if (response.statusCode >= 400) {
+        throw HttpException("Could not delete the product");
+      }
+    } on Exception catch (e) {
+      _handleOnDeleteError(index, deletedProduct);
+    }
+  }
+
+  _handleOnDeleteError(int index, Product deletedProduct) {
+    _items.insert(index, deletedProduct);
+    notifyListeners();
+    throw HttpException("Could not delete the product");
+  }
+
   _convertMapToProduct(id, productMap) {
     return Product(
         id: id,

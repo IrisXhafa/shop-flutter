@@ -42,6 +42,7 @@ class Product with ChangeNotifier {
     } on Exception catch (e) {
       this.isFavorite = oldStatus;
       notifyListeners();
+      throw e;
     }
   }
 }

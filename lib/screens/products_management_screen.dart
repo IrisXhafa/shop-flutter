@@ -27,7 +27,9 @@ class ProductsManagementScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final products = Provider.of<ProductsProvider>(context).items;
+    final productsData = Provider.of<ProductsProvider>(context);
+    final products = productsData.items;
+
     return Scaffold(
       appBar: _createAppBar(context),
       drawer: MainDrawer(),
@@ -40,7 +42,12 @@ class ProductsManagementScreen extends StatelessWidget {
         child: ListView.builder(
           itemBuilder: (ctx, index) {
             Product product = products[index];
-            return UserProductItem(product.title, product.imageUrl, product.id);
+            return UserProductItem(
+              product.title,
+              product.imageUrl,
+              product.id,
+              productsData.deleteProduct,
+            );
           },
           itemCount: products.length,
         ),
