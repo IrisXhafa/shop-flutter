@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shop_app/providers/auth_provider.dart';
 import 'package:shop_app/providers/cart_provider.dart';
 import 'package:shop_app/providers/order_provider.dart';
 import 'package:shop_app/providers/products_provider.dart';
+import 'package:shop_app/screens/auth_screen.dart';
 import 'package:shop_app/screens/cart_items_screen.dart';
 import 'package:shop_app/screens/orders_overview_screen.dart';
 import 'package:shop_app/screens/product_form_screen.dart';
@@ -20,9 +22,26 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => ProductsProvider()),
-        ChangeNotifierProvider(create: (context) => CartProvider()),
-        ChangeNotifierProvider(create: (context) => OrderProvider())
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, ProductsProvider>(
+            update: (context, authData, previousProducts) => ProductsProvider(
+                authData.token,
+                authData.userId,
+                previousProducts == null ? [] : previousProducts.items),
+            create: null),
+        ChangeNotifierProxyProvider<AuthProvider, CartProvider>(
+          update: (context, authData, previousCartItems) => CartProvider(
+              authData.token,
+              previousCartItems == null ? {} : previousCartItems.cartItems),
+          create: null,
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, OrderProvider>(
+          update: (context, authData, previousOrders) => OrderProvider(
+              authData.token,
+              authData.userId,
+              previousOrders == null ? [] : previousOrders.orders),
+          create: null,
+        ),
       ],
       child: MaterialApp(
         title: 'Flutter Demo',
@@ -40,7 +59,13 @@ class MyApp extends StatelessWidget {
               )),
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: ProductOverviewScreen(),
+        home: Consumer<AuthProvider>(
+          builder: (context, authData, _) {
+            return authData.isAuthanticated()
+                ? ProductOverviewScreen()
+                : AuthScreen();
+          },
+        ),
         routes: {
           ProductDetailsScreen.ROUTE: (context) => ProductDetailsScreen(),
           CartItems.ROUTE: (context) => CartItems(),

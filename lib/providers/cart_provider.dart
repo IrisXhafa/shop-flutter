@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:shop_app/models/cart_item.dart';
 
 class CartProvider with ChangeNotifier {
+  CartProvider(this._token, this._cartItems);
+  String _token;
   Map<String, CartItem> _cartItems = {};
 
   Map<String, CartItem> get cartItems {

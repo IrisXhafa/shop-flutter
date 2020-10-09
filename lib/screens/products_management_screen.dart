@@ -27,31 +27,42 @@ class ProductsManagementScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final productsData = Provider.of<ProductsProvider>(context);
-    final products = productsData.items;
-
     return Scaffold(
       appBar: _createAppBar(context),
       drawer: MainDrawer(),
       body: Container(
-        padding: EdgeInsets.all(8),
-        height: MediaQuery.of(context).size.height -
-            MediaQuery.of(context).padding.top -
-            _appBar.preferredSize.height,
-        width: MediaQuery.of(context).size.width,
-        child: ListView.builder(
-          itemBuilder: (ctx, index) {
-            Product product = products[index];
-            return UserProductItem(
-              product.title,
-              product.imageUrl,
-              product.id,
-              productsData.deleteProduct,
-            );
-          },
-          itemCount: products.length,
-        ),
-      ),
+          padding: EdgeInsets.all(8),
+          height: MediaQuery.of(context).size.height -
+              MediaQuery.of(context).padding.top -
+              _appBar.preferredSize.height,
+          width: MediaQuery.of(context).size.width,
+          child: FutureBuilder(
+            future: Provider.of<ProductsProvider>(context).fetchProducts(false),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
+              } else {
+                return Consumer<ProductsProvider>(
+                  builder: (ctx, productsData, _) {
+                    return ListView.builder(
+                      itemBuilder: (ctx, index) {
+                        Product product = productsData.items[index];
+                        return UserProductItem(
+                          product.title,
+                          product.imageUrl,
+                          product.id,
+                          productsData.deleteProduct,
+                        );
+                      },
+                      itemCount: productsData.items.length,
+                    );
+                  },
+                );
+              }
+            },
+          )),
     );
   }
 }

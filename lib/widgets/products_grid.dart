@@ -13,7 +13,7 @@ class ProductsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       child: FutureBuilder(
-        future: Provider.of<ProductsProvider>(context).fetchProducts(),
+        future: Provider.of<ProductsProvider>(context).fetchProducts(true),
         builder: (context, dataSnapshot) {
           if (dataSnapshot.connectionState == ConnectionState.waiting) {
             return Center(

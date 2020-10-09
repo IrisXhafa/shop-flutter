@@ -8,6 +8,10 @@ import '../http_exception.dart';
 import '../models/product.dart';
 
 class ProductsProvider with ChangeNotifier {
+  ProductsProvider(this._token, this._userId, this._items);
+
+  final String _token;
+  final String _userId;
   List<Product> _items = [];
 
   List<Product> get items {
@@ -22,27 +26,38 @@ class ProductsProvider with ChangeNotifier {
     return this.items.firstWhere((product) => product.id == id);
   }
 
-  Future<void> fetchProducts() async {
-    var response = await http.get('$URL/products.json');
+  Future<void> fetchProducts(bool fetchAll) async {
+    String _filterSegment = '';
+    if (!fetchAll) {
+      _filterSegment = '&orderBy="creatorId"&equalTo="$_userId"';
+    }
+    var response =
+        await http.get('$URL/products.json?auth=$_token$_filterSegment');
     var res = json.decode(response.body) as Map<String, dynamic>;
+    if (res == null) {
+      return;
+    }
+    var favoritesResponse =
+        await http.get('$URL/usersfavorites/$_userId.json?auth=$_token');
+    var favoriteProducts = json.decode(favoritesResponse.body);
     _items = [];
     res.forEach((key, value) {
-      _items.add(_convertMapToProduct(key, value));
+      _items.add(_convertMapToProduct(key, value, favoriteProducts));
     });
-    print(json.decode(response.body));
   }
 
   Future<void> addProduct(Product newProduct) async {
     try {
       Map<String, dynamic> product = _createProductMap(newProduct);
-      var response =
-          await http.post('$URL/products.json', body: json.encode(product));
+      var response = await http.post('$URL/products.json?auth=$_token',
+          body: json.encode(product));
       newProduct = Product(
           id: json.decode(response.body)['name'],
           title: newProduct.title,
           description: newProduct.description,
           imageUrl: newProduct.imageUrl,
           price: newProduct.price,
+          creatorId: _userId,
           isFavorite: newProduct.isFavorite);
       this._items.add(newProduct);
       notifyListeners();
@@ -57,7 +72,8 @@ class ProductsProvider with ChangeNotifier {
       Product oldProduct = _items[index];
       _items[index] = editedProduct;
       Map<String, dynamic> product = _createProductMap(editedProduct);
-      var response = await http.put('$URL/products/${editedProduct.id}.json',
+      var response = await http.put(
+          '$URL/products/${editedProduct.id}.json?auth=$_token',
           body: json.encode(product));
       if (response.statusCode >= 400) {
         _items[index] = oldProduct;
@@ -74,11 +90,11 @@ class ProductsProvider with ChangeNotifier {
     _items.removeAt(index);
     notifyListeners();
     try {
-      final response = await http.delete('$URL/products/$id.json');
+      final response = await http.delete('$URL/products/$id.json?auth=$_token');
       if (response.statusCode >= 400) {
         throw HttpException("Could not delete the product");
       }
-    } on Exception catch (e) {
+    } on Exception {
       _handleOnDeleteError(index, deletedProduct);
     }
   }
@@ -89,14 +105,14 @@ class ProductsProvider with ChangeNotifier {
     throw HttpException("Could not delete the product");
   }
 
-  _convertMapToProduct(id, productMap) {
+  _convertMapToProduct(id, productMap, favorites) {
     return Product(
         id: id,
         title: productMap['title'],
         description: productMap['description'],
         imageUrl: productMap['imageUrl'],
         price: productMap['price'],
-        isFavorite: productMap['isFavorite']);
+        isFavorite: favorites == null ? false : favorites[id] ?? false);
   }
 
   _createProductMap(Product product) {
@@ -105,6 +121,7 @@ class ProductsProvider with ChangeNotifier {
       'description': product.description,
       'price': product.price,
       'imageUrl': product.imageUrl,
+      'creatorId': _userId,
       'isFavorite': product.isFavorite
     };
     return productMap;

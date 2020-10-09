@@ -8,6 +8,9 @@ import 'package:shop_app/models/cart_item.dart';
 import 'package:shop_app/models/order_item.dart';
 
 class OrderProvider with ChangeNotifier {
+  OrderProvider(this._token, this._userId, this._orders);
+  final String _userId;
+  final String _token;
   List<OrderItem> _orders = [];
 
   List<OrderItem> get orders {
@@ -15,14 +18,15 @@ class OrderProvider with ChangeNotifier {
   }
 
   Future<void> fetchOrders() async {
-    var response = await http.get('$URL/orders.json');
+    var response = await http.get('$URL/orders/$_userId.json?auth=$_token');
     _orders = [];
     _setOrders(json.decode(response.body));
   }
 
   _setOrders(Map<String, dynamic> mappedOrders) {
     mappedOrders.forEach((orderId, orderData) {
-      _orders.add(OrderItem(
+      _orders.add(
+        OrderItem(
           id: orderId,
           totalAmount: orderData['totalAmount'],
           items: (orderData['items'] as List<dynamic>).map(
@@ -35,12 +39,14 @@ class OrderProvider with ChangeNotifier {
               );
             },
           ).toList(),
-          date: DateTime.parse(orderData['date'])));
+          date: DateTime.parse(orderData['date']),
+        ),
+      );
     });
   }
 
   Future<void> addOrder(OrderItem order) async {
-    var response = await http.post('$URL/orders.json',
+    var response = await http.post('$URL/orders/$_userId.json?auth=$_token',
         body: json.encode(_createOrderMap(order)));
     print(response);
     _orders.insert(
